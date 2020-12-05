@@ -28,14 +28,22 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <th scope="row">1</th>
-                        <td>200</td>
-                        <td>5 jaar</td>
-                        <td>6550534W</td>
+                        <th id="wattAC" scope="row">1</th>
+                        <td id="wattDC">200</td>
+                        <td id="runtime">5 jaar</td>
+                        <td id="total">6550534W</td>
                     </tr>
                 </tbody>
             </table>
+            <script>
 
+                setInterval(function () {
+                    fetch("/getdata").then(res => res.json()).then(function (response) {
+                        console.log(response);
+                    })
+                }, 10000)
+
+            </script>
 
         </div>
 

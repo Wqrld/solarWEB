@@ -31,7 +31,7 @@ app.get("/", function (req, res) {
 
 app.get('/getdata', function(req, res){
     db.query("SELECT * FROM readings", [], function (err, response) {
-        res.send(response)
+        res.send({a: "1"})
     })
 })
 
