@@ -1,9 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 var mysql = require("mysql");
-var config = require("config.json");
+var config = require("./config.json");
 
-var connection = mysql.createPool({
+var db = mysql.createPool({
     connectionLimit: 4, // Faster connections.
     host: config.db_host,
     user: config.db_user,
@@ -28,6 +28,12 @@ app.get("/", function (req, res) {
         res.render("index.ejs", { readings: response })
     })
 });
+
+app.get('/getdata', function(req, res){
+    db.query("SELECT * FROM readings", [], function (err, response) {
+        res.send(response)
+    })
+})
 
 app.post("/newdata", function (req, res) {
     if (req.body.apikey == config.apikey) {
