@@ -42,7 +42,7 @@ app.get('/getdata', function (req, res) {
 
 app.get('/getrawdata', function (req, res) {
     db.query("SELECT * FROM readings", [], function (err, response) {
-        res.send({ a: "1" })
+        res.send(response)
     })
 })
 
