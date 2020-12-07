@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 var mysql = require("mysql");
+const fileUpload = require('express-fileupload');
 var config = require("./config.json");
 
 var db = mysql.createPool({
@@ -13,6 +14,10 @@ var db = mysql.createPool({
 });
 
 const app = express();
+
+app.use(fileUpload({
+    createParentPath: true
+}));
 
 app.use(
     bodyParser.urlencoded({
@@ -43,7 +48,7 @@ app.get('/getrawdata', function (req, res) {
 
 
 app.post('/uploadimage', function (req, res) {
-    if (req.body.apikey == config.apikey) {
+    if (req.body.apikey != config.apikey) {
         if (req.files) {
             req.files.plot.mv('./static/plot.png')
             res.send('success')
@@ -51,25 +56,23 @@ app.post('/uploadimage', function (req, res) {
             res.send('missing req.files.plot')
         }
     } else {
-        res.send("not allowed", 403)
+        res.status('403').send("not allowed")
     }
 })
 
 app.post("/newdata", function (req, res) {
-    if (req.body.apikey == config.apikey) {
-
-        if (req.files) {
-            req.files.plot.mv('./static/plot.png')
-        }
-
-        db.query("INSERT into readings set ?", { wattAC: req.body.wattAC }, function (err) {
-
-            res.send("success")
+    if (req.body.apikey != config.apikey) {
+     
+        db.query("INSERT into readings set ?", { NAME: req.body.wattAC }, function (err) {
+           
+           if(err) console.log(err)
+           
+            res.send(req.body)
 
         })
 
     } else {
-        res.send("not allowed", 403)
+        res.status('403').send("not allowed")
     }
 })
 
