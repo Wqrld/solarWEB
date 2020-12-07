@@ -35,6 +35,13 @@ app.get('/getdata', function (req, res) {
     })
 })
 
+app.get('/getrawdata', function (req, res) {
+    db.query("SELECT * FROM readings", [], function (err, response) {
+        res.send({ a: "1" })
+    })
+})
+
+
 app.post('/uploadimage', function (req, res) {
     if (req.body.apikey == config.apikey) {
         if (req.files) {
