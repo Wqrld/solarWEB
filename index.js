@@ -29,15 +29,31 @@ app.get("/", function (req, res) {
     })
 });
 
-app.get('/getdata', function(req, res){
+app.get('/getdata', function (req, res) {
     db.query("SELECT * FROM readings", [], function (err, response) {
-        res.send({a: "1"})
+        res.send({ a: "1" })
     })
+})
+
+app.post('/uploadimage', function (req, res) {
+    if (req.body.apikey == config.apikey) {
+        if (req.files) {
+            req.files.plot.mv('./static/plot.png')
+            res.send('success')
+        } else {
+            res.send('missing req.files.plot')
+        }
+    } else {
+        res.send("not allowed", 403)
+    }
 })
 
 app.post("/newdata", function (req, res) {
     if (req.body.apikey == config.apikey) {
 
+        if (req.files) {
+            req.files.plot.mv('./static/plot.png')
+        }
 
         db.query("INSERT into readings set ?", { wattAC: req.body.wattAC }, function (err) {
 
