@@ -29,19 +29,19 @@ app.use("/static", express.static("static"));
 app.use(bodyParser.json());
 
 app.get("/", function (req, res) {
-    db.query("SELECT * FROM readings", [], function (err, response) {
-        res.render("index.ejs", { readings: response })
+    db.query("SELECT * FROM readouts", [], function (err, response) {
+        res.render("index.ejs", { readouts: response })
     })
 });
 
 app.get('/getdata', function (req, res) {
-    db.query("SELECT * FROM readings", [], function (err, response) {
+    db.query("SELECT * FROM readouts", [], function (err, response) {
         res.send({ a: "1" })
     })
 })
 
 app.get('/getrawdata', function (req, res) {
-    db.query("SELECT * FROM readings", [], function (err, response) {
+    db.query("SELECT * FROM readouts", [], function (err, response) {
         res.send(response)
     })
 })
@@ -61,9 +61,11 @@ app.post('/uploadimage', function (req, res) {
 })
 
 app.post("/newdata", function (req, res) {
+    console.log("headers")
+    console.log(req.headers)
     if (req.body.apikey != config.apikey) {
      
-        db.query("INSERT into readings set ?", { NAME: req.body.wattAC }, function (err) {
+        db.query("INSERT into readouts set ?", {datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),  wattTotaal: req.body.wattTotaal, wattDC: req.body.wattDC, wattAC: req.body.wattAC, runtime: req.body.runtime }, function (err) {
            
            if(err) console.log(err)
            
