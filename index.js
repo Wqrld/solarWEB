@@ -28,20 +28,23 @@ app.use("/static", express.static("static"));
 
 app.use(bodyParser.json());
 
+//SELECT * FROM news WHERE date >= now() - INTERVAL 1 DAY;
+
 app.get("/", function (req, res) {
-    db.query("SELECT * FROM readouts", [], function (err, response) {
-        res.render("index.ejs", { readouts: response })
+    db.query("SELECT * FROM readouts where wattDC < 7000", [], function (err, response) {
+        if(err) console.log(err)
+        res.render("index.ejs", { readouts: JSON.stringify(response) })
     })
 });
 
 app.get('/getdata', function (req, res) {
-    db.query("SELECT * FROM readouts", [], function (err, response) {
-        res.send({ a: "1" })
+    db.query("SELECT * FROM readouts where wattDC < 7000 order by runtime desc", [], function (err, response) {
+        res.send(response[0])
     })
 })
 
 app.get('/getrawdata', function (req, res) {
-    db.query("SELECT * FROM readouts", [], function (err, response) {
+    db.query("SELECT * FROM readouts where wattDC < 7000 order by runtime desc", [], function (err, response) {
         res.send(response)
     })
 })

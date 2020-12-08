@@ -20,27 +20,33 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th scope="col">Watt AC</th>
                         <th scope="col">Watt DC</th>
+                        <th scope="col">Watt AC</th>
+                        <th scope="col">Totaal opgewekte energie</th>
                         <th scope="col">Looptijd</th>
-                        <th scope="col">Totaal wattage</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <th id="wattAC" scope="row">1</th>
                         <td id="wattDC">200</td>
+                        <td id="wattAC">1</th>
+                        <td id="total">6550534 kWh</td>
                         <td id="runtime">5 jaar</td>
-                        <td id="total">6550534W</td>
                     </tr>
                 </tbody>
             </table>
             <script>
-
-                setInterval(function () {
+                function fetchdata() {
                     fetch("/getdata").then(res => res.json()).then(function (response) {
                         console.log(response);
+                        document.getElementById('wattAC').innerHTML = response.wattAC + "W"
+                        document.getElementById('wattDC').innerHTML = response.wattDC + "W"
+                        document.getElementById('runtime').innerHTML = (response.runtime / 60 / 24 / 365.25).toFixed(1) + " Jaar"
+                        document.getElementById('total').innerHTML = response.wattTotaal + " kWh"
                     })
+                }
+                setInterval(function () {
+                    fetchdata()
                 }, 10000)
 
             </script>
@@ -77,7 +83,61 @@
             </p>
         </div>
     </div>
+    <div class="container">
+        <div class="row">
+            <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+                <canvas id="dailyGraph" width="20" height="100"></canvas>
+            </div>
+            <script src="/static/moment.js"></script>
+            <script src="/static/Chart.min.js"></script>
 
+            <script>
+
+                var readouts = <%- readouts %>;
+
+                var mapnew = [];
+                var counter;
+                for (let i = 0; i < readouts.length; i++) {
+                    mapnew.push({ x: moment().add(i * 30, 'seconds'), y: readouts[i].wattDC })
+                }
+
+                var ctx = document.getElementById('dailyGraph').getContext('2d');
+                var myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        datasets: [{
+                            label: 'Watt DC',
+                            data: mapnew,
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }],
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    displayFormats: {
+                                        day: 'DD MMM'
+                                    }
+                                }
+                            }]
+                        }
+                    }
+                });
+
+                fetchdata()
+
+            </script>
+        </div>
+    </div>
 
 </body>
 
