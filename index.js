@@ -65,7 +65,13 @@ app.post("/newdata", function (req, res) {
     console.log(req.headers)
     if (req.body.apikey != config.apikey) {
      
-        db.query("INSERT into readouts set ?", {datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),  wattTotaal: req.body.wattTotaal, wattDC: req.body.wattDC, wattAC: req.body.wattAC, runtime: req.body.runtime }, function (err) {
+        db.query("INSERT into readouts set ?", {
+            datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),  
+            wattTotaal: req.body.wattTotaal, 
+            wattDC: req.body.wattDC, 
+            wattAC: req.body.wattAC, 
+            runtime: req.body.runtime 
+        }, function (err) {
            
            if(err) console.log(err)
            
