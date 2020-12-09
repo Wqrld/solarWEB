@@ -31,9 +31,21 @@ app.use(bodyParser.json());
 //SELECT * FROM news WHERE date >= now() - INTERVAL 1 DAY;
 
 app.get("/", function (req, res) {
-    db.query("SELECT * FROM readouts where wattDC < 7000", [], function (err, response) {
-        if(err) console.log(err)
-        res.render("index.ejs", { readouts: JSON.stringify(response) })
+    db.query("SELECT * FROM readouts where wattDC < 7000 AND datetime >= now() - INTERVAL 1 DAY", [], function (err, dailyReadouts) {
+        if (err) console.log(err)
+        for (let i = 0; i < dailyReadouts.length; i++) {
+            if (i > 1 && dailyReadouts[i].wattDC > dailyReadouts[i - 1].wattDC + 500) {
+                dailyReadouts[i] = dailyReadouts[i - 1]
+            }
+        }
+
+        db.query("select datetime, MAX(wattDC) as wattDC FROM readouts where wattDC < 7000 AND datetime IS NOT NULL GROUP BY DATE_FORMAT(datetime, '%m%d');", [], function (err, maxPerDay) {
+            if (err) console.log(err)
+
+
+            res.render("index.ejs", { readouts: JSON.stringify(dailyReadouts), maxPerDay: JSON.stringify(maxPerDay) })
+        });
+
     })
 });
 
@@ -48,7 +60,10 @@ app.get('/getrawdata', function (req, res) {
         res.send(response)
     })
 })
-
+app.post('/ret', function (req, res) {
+    console.log(req.headers)
+    res.send("success")
+})
 
 app.post('/uploadimage', function (req, res) {
     if (req.body.apikey != config.apikey) {
@@ -67,17 +82,17 @@ app.post("/newdata", function (req, res) {
     console.log("headers")
     console.log(req.headers)
     if (req.body.apikey != config.apikey) {
-     
+
         db.query("INSERT into readouts set ?", {
-            datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),  
-            wattTotaal: req.body.wattTotaal, 
-            wattDC: req.body.wattDC, 
-            wattAC: req.body.wattAC, 
-            runtime: req.body.runtime 
+            datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),
+            wattTotaal: req.body.wattTotaal,
+            wattDC: req.body.wattDC,
+            wattAC: req.body.wattAC,
+            runtime: req.body.runtime
         }, function (err) {
-           
-           if(err) console.log(err)
-           
+
+            if (err) console.log(err)
+
             res.send(req.body)
 
         })

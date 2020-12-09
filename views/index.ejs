@@ -20,6 +20,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th scope="col">Gemeten om</th>
                         <th scope="col">Watt DC</th>
                         <th scope="col">Watt AC</th>
                         <th scope="col">Totaal opgewekte energie</th>
@@ -28,13 +29,15 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td id="wattDC">200</td>
-                        <td id="wattAC">1</th>
-                        <td id="total">6550534 kWh</td>
-                        <td id="runtime">5 jaar</td>
+                        <td id="datetime">error</td>
+                        <td id="wattDC">error</td>
+                        <td id="wattAC">error</th>
+                        <td id="total">error kWh</td>
+                        <td id="runtime">error jaar</td>
                     </tr>
                 </tbody>
             </table>
+            <script src="/static/moment.js"></script>
             <script>
                 function fetchdata() {
                     fetch("/getdata").then(res => res.json()).then(function (response) {
@@ -43,6 +46,7 @@
                         document.getElementById('wattDC').innerHTML = response.wattDC + "W"
                         document.getElementById('runtime').innerHTML = (response.runtime / 60 / 24 / 365.25).toFixed(1) + " Jaar"
                         document.getElementById('total').innerHTML = response.wattTotaal + " kWh"
+                        document.getElementById('datetime').innerHTML = moment(response.datetime).format("HH:mm")
                     })
                 }
                 setInterval(function () {
@@ -65,7 +69,7 @@
                 Wat(t) betekenen deze cijfers?<br />
                 Watt is een eenheid van energie per seconde. Ter vergelijking:<br />
                 Één chromebook gebruikt ongeveer 15 watt. Een desktop computer ongeveer 100 watt.<br />
-                Per opgewekte kWh bespaar je ongeveer 0,649 kilogram CO2
+                Per opgewekte kWh (1 uur lang 1000 watt) bespaar je ongeveer 0,649 kilogram CO2
                 <a
                     href="https://wisenederland.nl/artikel/hoeveel-co2-uitstoot-bespaar-je-als-je-overstapt-op-groene-energie/">(bron)</a>.
 
@@ -88,31 +92,59 @@
             <div class="chart-container" style="position: relative; height:40vh; width:80vw">
                 <canvas id="dailyGraph" width="20" height="100"></canvas>
             </div>
-            <script src="/static/moment.js"></script>
             <script src="/static/Chart.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@0.7.7"></script>
 
             <script>
 
                 var readouts = <%- readouts %>;
 
                 var mapnew = [];
-                var counter;
+
+                //deduplicate
+                var seen = {};
+                readouts = readouts.filter(x => {
+                    let isseen = seen.hasOwnProperty(x.datetime) ? true : false;
+                    seen[x.datetime] = true
+                    return !isseen
+                })
+
+                readouts = readouts.filter(x => { return x.datetime != "2020-12-07T23:00:00.000Z" && x.datetime != null })
+
                 for (let i = 0; i < readouts.length; i++) {
-                    mapnew.push({ x: moment().add(i * 30, 'seconds'), y: readouts[i].wattDC })
+                    mapnew.push({ x: moment(readouts[i].datetime), y: readouts[i].wattDC })
                 }
 
                 var ctx = document.getElementById('dailyGraph').getContext('2d');
                 var myChart = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'line',
                     data: {
                         datasets: [{
-                            label: 'Watt DC',
+                            label: 'Watt DC (laatste 24H)',
                             data: mapnew,
                             backgroundColor: 'rgb(255, 99, 132)',
                             borderColor: 'rgb(255, 99, 132)',
+                            pointRadius: 0.1,
+                            fill: false,
+                            pointHitRadius: 2
                         }]
                     },
+
                     options: {
+                        plugins: {
+
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'x'
+                                }
+                            }
+                        },
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
@@ -137,6 +169,78 @@
 
             </script>
         </div>
+
+        <div class="row">
+            <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+                <canvas id="maxPerDay" width="20" height="100"></canvas>
+            </div>
+
+            <script>
+
+                var readouts = <%- maxPerDay %>;
+
+                var mapnew = [];
+
+                for (let i = 0; i < readouts.length; i++) {
+                    mapnew.push({ x: moment(readouts[i].datetime).set({hour: 12, minute: 0, seconds: 0}), y: readouts[i].wattDC })
+                }
+
+                var ctx = document.getElementById('maxPerDay').getContext('2d');
+                var myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Max Watt DC per dag',
+                            data: mapnew,
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            pointRadius: 0.1,
+                            fill: false,
+                            pointHitRadius: 2
+                        }]
+                    },
+
+                    options: {
+                        plugins: {
+
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'x'
+                                }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }],
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'DD MMM'
+                                    }
+                                }
+                            }]
+                        }
+                    }
+                });
+
+         
+
+            </script>
+        </div>
+
+
     </div>
 
 </body>
