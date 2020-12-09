@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: "novumzon",
+    name: "solarsystem",
     script: "index.js",
     watch: true,
     watch_delay: 1000,
