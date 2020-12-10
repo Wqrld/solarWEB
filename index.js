@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 var mysql = require("mysql");
 const fileUpload = require('express-fileupload');
 var config = require("./config.json");
+var lastDC;
 
 var db = mysql.createPool({
     connectionLimit: 4, // Faster connections.
@@ -28,10 +29,14 @@ app.use("/static", express.static("static"));
 
 app.use(bodyParser.json());
 
+db.query("SELECT * FROM readouts where wattDC < 7000 order by runtime desc", [], function (err, response) {
+    lastDC = response[0].wattDC;
+})
+
 //SELECT * FROM news WHERE date >= now() - INTERVAL 1 DAY;
 
 app.get("/", function (req, res) {
-    db.query("SELECT * FROM readouts where wattDC < 7000 AND datetime >= now() - INTERVAL 1 DAY", [], function (err, dailyReadouts) {
+    db.query("SELECT * FROM readouts where wattDC < 7000 AND datetime >= now() - INTERVAL 2 DAY", [], function (err, dailyReadouts) {
         if (err) console.log(err)
         for (let i = 0; i < dailyReadouts.length; i++) {
             if (i > 1 && dailyReadouts[i].wattDC > dailyReadouts[i - 1].wattDC + 500) {
@@ -39,7 +44,7 @@ app.get("/", function (req, res) {
             }
         }
 
-        db.query("select datetime, AVG(wattDC) as wattDC FROM readouts where wattDC < 7000 AND datetime IS NOT NULL GROUP BY DATE_FORMAT(datetime, '%m%d');", [], function (err, maxPerDay) {
+        db.query("select datetime, MAX(wattDC) as wattDC FROM readouts where wattDC < 7000 AND datetime IS NOT NULL GROUP BY DATE_FORMAT(datetime, '%m%d');", [], function (err, maxPerDay) {
             if (err) console.log(err)
 
 
@@ -60,42 +65,49 @@ app.get('/getrawdata', function (req, res) {
         res.send(response)
     })
 })
-app.post('/ret', function (req, res) {
-    console.log(req.headers)
-    res.send("success")
-})
+// app.post('/ret', function (req, res) {
+//     console.log(req.headers)
+//     res.send("success")
+// })
 
-app.post('/uploadimage', function (req, res) {
-    if (req.body.apikey != config.apikey) {
-        if (req.files) {
-            req.files.plot.mv('./static/plot.png')
-            res.send('success')
-        } else {
-            res.send('missing req.files.plot')
-        }
-    } else {
-        res.status('403').send("not allowed")
-    }
-})
+// app.post('/uploadimage', function (req, res) {
+//     if (req.body.apikey != config.apikey) {
+//         if (req.files) {
+//             req.files.plot.mv('./static/plot.png')
+//             res.send('success')
+//         } else {
+//             res.send('missing req.files.plot')
+//         }
+//     } else {
+//         res.status('403').send("not allowed")
+//     }
+// })
 
 app.post("/newdata", function (req, res) {
     console.log("headers")
     console.log(req.headers)
-    if (req.body.apikey != config.apikey) {
+    console.log(config.apikey)
+    if (req.headers.apikey == config.apikey) {
 
-        db.query("INSERT into readouts set ?", {
-            datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),
-            wattTotaal: req.body.wattTotaal,
-            wattDC: req.body.wattDC,
-            wattAC: req.body.wattAC,
-            runtime: req.body.runtime
-        }, function (err) {
+        if (lastDC != undefined && req.body.wattDC < lastDC + 500) {
+            console.log("inserting");
 
-            if (err) console.log(err)
+            db.query("INSERT into readouts set ?", {
+                datetime: require('moment')().format('YYYY-MM-DD HH:mm:ss'),
+                wattTotaal: req.body.wattTotaal,
+                wattDC: req.body.wattDC,
+                wattAC: req.body.wattAC,
+                runtime: req.body.runtime
+            }, function (err) {
 
-            res.send(req.body)
+                if (err) console.log(err)
 
-        })
+                res.send(req.body)
+
+            })
+            lastDC = req.body.wattDC
+        }
+
 
     } else {
         res.status('403').send("not allowed")
