@@ -88,8 +88,9 @@ app.post("/newdata", function (req, res) {
     console.log(req.headers)
     console.log(config.apikey)
     if (req.headers.apikey == config.apikey) {
-
-        if (lastDC != undefined && req.body.wattDC < lastDC + 500) {
+        console.log(lastDC, req.body.wattDC)
+        // if (lastDC != undefined && req.body.wattDC < (lastDC + 500)) {\
+        if (lastDC != undefined && req.body.wattDC < (lastDC + 500)) {
             console.log("inserting");
 
             db.query("INSERT into readouts set ?", {
