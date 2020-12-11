@@ -30,7 +30,7 @@ app.use("/static", express.static("static"));
 app.use(bodyParser.json());
 
 db.query("SELECT * FROM readouts where wattDC < 7000 order by runtime desc", [], function (err, response) {
-    lastDC = response[0].wattDC;
+    lastDC = Number(response[0].wattDC);
 })
 
 //SELECT * FROM news WHERE date >= now() - INTERVAL 1 DAY;
@@ -84,13 +84,12 @@ app.get('/getrawdata', function (req, res) {
 // })
 
 app.post("/newdata", function (req, res) {
-    console.log("headers")
-    console.log(req.headers)
-    console.log(config.apikey)
+    console.log("new data")
     if (req.headers.apikey == config.apikey) {
+        req.body.wattDC = Number(req.body.wattAC)
         console.log(lastDC, req.body.wattDC)
-        // if (lastDC != undefined && req.body.wattDC < (lastDC + 500)) {\
-        if (lastDC != undefined && req.body.wattDC < (lastDC + 500)) {
+        let lastDCplus = lastDC + 500
+        if (req.body.wattDC < lastDCplus) {
             console.log("inserting");
 
             db.query("INSERT into readouts set ?", {
