@@ -44,7 +44,7 @@ app.get("/", function (req, res) {
             }
         }
 
-        db.query("select datetime, MAX(wattDC) as wattDC FROM readouts where wattDC < 7000 AND datetime IS NOT NULL GROUP BY DATE_FORMAT(datetime, '%m%d');", [], function (err, maxPerDay) {
+        db.query("select datetime, MAX(wattDC) as wattDC FROM readouts where wattDC < 7000 AND datetime IS NOT NULL GROUP BY DATE_FORMAT(datetime, '%y%m%d');", [], function (err, maxPerDay) {
             if (err) console.log(err)
 
 
